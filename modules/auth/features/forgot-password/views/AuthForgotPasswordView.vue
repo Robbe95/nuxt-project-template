@@ -1,0 +1,82 @@
+<script setup lang="ts">
+import { useForm } from 'formango'
+import { storeToRefs } from 'pinia'
+import { computed, ref } from 'vue'
+
+import { useI18n } from '#i18n'
+import AppButton from '~/components/app/button/AppButton.vue'
+import { useHandleApiError } from '~/composables/handle-api-error/handleApiError.composable'
+import { forgotPasswordFormSchema } from '~/models/auth/forgot-password/forgotPasswordForm.model'
+import { useAuthForgotPasswordMutation } from '~/modules/auth/api/mutations/authForgotPassword.mutation'
+import AuthPage from '~/modules/auth/components/AuthPage.vue'
+import AuthForgotPasswordForm from '~/modules/auth/features/forgot-password/components/AuthForgotPasswordForm.vue'
+import { useAuthStore } from '~/stores/auth.store'
+
+const authStore = useAuthStore()
+
+const { lastLoginAttemptEmail } = storeToRefs(authStore)
+
+const hasResetPassword = ref<boolean>(false)
+
+const { t } = useI18n()
+
+const resetEmail = ref<string>('')
+
+const { form, onSubmitForm } = useForm({
+	schema: forgotPasswordFormSchema,
+})
+
+const forgotPasswordMutation = useAuthForgotPasswordMutation()
+
+const title = computed<string>(() => {
+	if (hasResetPassword.value) {
+		return t('auth.check_your_email')
+	}
+
+	return t('auth.forgot_password')
+})
+
+const description = computed<string>(() => {
+	if (hasResetPassword.value) {
+		return t('auth.instruction_email_sent_to', { email: resetEmail.value })
+	}
+
+	return t('auth.forgot_password_message')
+})
+
+onSubmitForm(async (values) => {
+	try {
+		await forgotPasswordMutation.execute({
+			body: values,
+		})
+
+		hasResetPassword.value = true
+		resetEmail.value = values.email
+	} catch (error) {
+		useHandleApiError(error, form)
+	}
+})
+</script>
+
+<template>
+	<AuthPage
+		:description="description"
+		:title="title"
+	>
+		<AuthForgotPasswordForm
+			v-if="!hasResetPassword"
+			:form="form"
+			:last-login-attempt-email="lastLoginAttemptEmail"
+		/>
+
+		<div class="mt-4 flex justify-center">
+			<AppButton
+				icon-left="arrowLeft"
+				:to="{ name: 'login' }"
+				variant="ghost"
+			>
+				{{ t('auth.back_to_login') }}
+			</AppButton>
+		</div>
+	</AuthPage>
+</template>
