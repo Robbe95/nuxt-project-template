@@ -72,7 +72,7 @@ onSubmitForm(async (values) => {
 		<div class="mt-4 flex justify-center">
 			<AppButton
 				icon-left="arrowLeft"
-				:to="{ name: 'login' }"
+				:to="{ name: 'auth-login' }"
 				variant="ghost"
 			>
 				{{ t('auth.back_to_login') }}
